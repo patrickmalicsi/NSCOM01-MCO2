@@ -6,5 +6,5 @@
     "remote_ip": "127.0.0.1",
     "remote_sip_port": 5061,
     "initiator": true,
-    "audio_file": "G:/NSCOM01 MCO2/samples/audio/beep.wav"
+    "audio_file": "G:\\NSCOM01 MCO2\\samples\\audio\\beepconverted.wav"
 }

@@ -41,41 +41,50 @@ def main():
         else:
             # Callee logic
             print("Waiting for incoming call...")
-            remote_rtp_port, error = sip.wait_for_response(timeout=30)
-            if error:
-                print(f"Failed to receive call: {error}")
+            while True:
+                received_message, error = sip.wait_for_response(timeout=30)
+                if error:
+                    print(f"Failed to receive call: {error}")
+                    return
+
+                print("Received SIP message:")
+                print(received_message)  # Print the raw SIP message
+
+                # Handle BYE message
+                if "BYE" in received_message:
+                    print("Call terminated by remote host.")
+                    return
+
+                # Parse the SIP INVITE to extract the RTP port
+                if "m=audio" in received_message:
+                    lines = received_message.split("\n")
+                    for line in lines:
+                        if line.startswith("m=audio"):
+                            remote_rtp_port = int(line.split()[1])  # Extract the RTP port
+                            print(f"Extracted RTP port: {remote_rtp_port}")
+                            break
+                else:
+                    print("No audio information found in the SIP message.")
+                    return
+
+                # Send 200 OK response to the caller
+                print("Incoming call received. Sending 200 OK...")
+                sip.send_ok(config['remote_ip'], config['remote_sip_port'], config['rtp_port'])
+
+                # Start audio playback in a separate thread
+                try:
+                    audio_thread = threading.Thread(
+                        target=audio.play_stream  # No arguments passed
+                    )
+                    audio_thread.start()
+                except Exception as e:
+                    print(f"Error during audio playback: {e}")
+                    return
+
+                # Wait for user input to terminate the call
+                input("Press Enter to end call...")
+                sip.send_bye(config['remote_ip'], config['remote_sip_port'])
                 return
-
-            # Print received SIP message
-            received_message = sip.get_last_message()
-            print("Received SIP message:")
-            print(received_message)  # Print the raw SIP message
-
-            if "m=audio" in received_message:
-                lines = received_message.split("\n")
-                for line in lines:
-                    if line.startswith("m=audio"):
-                        remote_rtp_port = int(line.split()[1])  # Extract the RTP port
-                        break
-
-            # Send 200 OK response to the caller
-            print("Incoming call received. Sending 200 OK...")
-            sip.send_ok(config['remote_ip'], config['remote_sip_port'])
-
-            # Start audio playback in a separate thread
-            try:
-                audio_thread = threading.Thread(
-                    target=audio.play_stream,
-                    args=(remote_rtp_port,)
-                )
-                audio_thread.start()
-            except Exception as e:
-                print(f"Error during audio playback: {e}")
-                return
-
-            # Wait for user input to terminate the call
-            input("Press Enter to end call...")
-            sip.send_bye(config['remote_ip'], config['remote_sip_port'])
 
     finally:
         audio.stop()
