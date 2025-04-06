@@ -28,7 +28,8 @@ class RTPReceiver:
             try:
                 while True:
                     data, _ = self.sock.recvfrom(2048)
-                    if not data:
+                    if not data or data == b"END":  # Check for end-of-stream signal
+                        print("End of RTP stream detected.")
                         break
 
                     # Parse RTP header and extract audio payload
