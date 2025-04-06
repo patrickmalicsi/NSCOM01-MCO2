@@ -55,6 +55,10 @@ class RTPSender:
 
                     # Simulate real-time streaming
                     time.sleep(frame_duration)
+
+            # Send end-of-stream signal
+            self.sock.sendto(b"END", (self.remote_ip, self.remote_port))
+            print("End-of-stream signal sent.")
         except FileNotFoundError:
             print(f"Error: Audio file '{self.audio_file}' not found.")
         except Exception as e:
